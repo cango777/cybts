@@ -106,6 +106,9 @@ const KREDILER=[
   {id:"vakif2",  banka:"Vakıfbank 2",tur:"TİCARİ",  kalan:500000, vade:new Date(2029,5,26), taksit:31000,  faiz:2.99},
   {id:"ing",     banka:"İNG",        tur:"TİCARİ",  kalan:1150000,vade:new Date(2029,6,1),  taksit:57500,  faiz:3.36},
   {id:"dogus",   banka:"Doğuş Fin.", tur:"TİCARİ",  kalan:1000000,vade:new Date(2029,6,30), taksit:68561,  faiz:3.58},
+  // Ekim 2026'da çekilen krediler (ilk taksit Kasım 2026). İş Bankası 36 ay; Akbank (2) adedi tahmindir.
+  {id:"akbank2", banka:"Akbank (2)", tur:"KREDİ",   kalan:630000, vade:new Date(2027,8,24), taksit:73000,  faiz:"3.70", bas:new Date(2026,10,1), adet:11},
+  {id:"isbank",  banka:"İş Bankası", tur:"KREDİ",   kalan:500000, vade:new Date(2029,9,24), taksit:38500,  faiz:"3.70", bas:new Date(2026,10,1), adet:36},
 ].sort((a,b)=>a.vade-b.vade);
 const TOPLAM=KREDILER.reduce((s,k)=>s+k.kalan,0);
 const HEDEF=KREDILER[KREDILER.length-1].vade;
@@ -138,11 +141,11 @@ const bugun=new Date();
 let pAy={yil:bugun.getFullYear(),ay:bugun.getMonth()};
 
 const anahtar=(id,y,a)=>y+"-"+(a+1)+"|"+id;
-const taksitSayisi=(k)=>ayFarki(BASLANGIC,k.vade)+1;             // toplam taksit adedi
+const taksitSayisi=(k)=>k.adet||(ayFarki(k.bas||BASLANGIC,k.vade)+1);   // toplam taksit adedi
 const odenenAdet=(id)=>[...odenen].filter(x=>x.endsWith("|"+id)).length;
 function suanKalan(k){const N=taksitSayisi(k);const p=Math.min(odenenAdet(k.id),N);return Math.max(0,k.kalan*(1-p/N));}
 const ayIdx=(y,a)=>y*12+a;
-function odenebilir(k,y,a){const i=ayIdx(y,a);return i>=ayIdx(BASLANGIC.getFullYear(),BASLANGIC.getMonth()) && i<=ayIdx(k.vade.getFullYear(),k.vade.getMonth());}
+function odenebilir(k,y,a){const i=ayIdx(y,a);const b=k.bas||BASLANGIC;return i>=ayIdx(b.getFullYear(),b.getMonth()) && i<=ayIdx(k.vade.getFullYear(),k.vade.getMonth());}
 const odendiMi=(k,y,a)=>odenen.has(anahtar(k.id,y,a));
 
 const root=document.getElementById("app");
@@ -178,7 +181,7 @@ function render(){
   veri.forEach(k=>{const next=sirada&&k.id===sirada.id; const s=aysGun(k.vade,now); const krOran=k.p/k.N;
     yol+=`<div class="durak ${k.kapandi?"kapandi":""} ${next?"next":""}"><div class="nokta"></div>
       <div class="kart">${next?`<div class="nextEt">Sıradaki kapanış</div>`:""}
-        <div class="kart-ust"><div><div class="banka">${k.banka}</div><div class="turfaiz">${k.tur} · faiz ${yuzde(k.faiz)}</div></div>
+        <div class="kart-ust"><div><div class="banka">${k.banka}</div><div class="turfaiz">${k.tur}${k.faiz!=null?` · faiz ${yuzde(k.faiz)}`:""}</div></div>
           <div class="kalan">${k.kapandi?"₺0":tl(k.suanKalan)}</div></div>
         ${k.kapandi?"":`<div class="kart-orta"><div class="miniBar"><div style="width:${Math.max(krOran*100,2)}%"></div></div></div>`}
         <div class="kart-alt"><span>${k.p}/${k.N} taksit${k.kapandi?"":` · aylık ${tl(k.taksit)}`}</span>
